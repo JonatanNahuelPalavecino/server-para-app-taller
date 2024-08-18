@@ -1,0 +1,27 @@
+const express = require("express")
+const router = express.Router()
+const controlador = require("../controllers/pedidos.controller")
+
+router.get("/ver-items", controlador.verItems)
+
+router.get("/ver-total-pedidos", controlador.verTotalDeOrdenes)
+
+router.post("/ver-pedidos/:page", controlador.obtenerPedidos)
+
+router.post("/crear-pedido", controlador.crearPedido)
+
+router.put("/modificar-pedido/:pedido", controlador.modificarPedido)
+
+router.delete("/eliminar-pedido/:pedido", controlador.eliminarPedido)
+
+router.post("/finalizar-pedido", controlador.finalizarPedido)
+
+router.post("/agregar-items", controlador.agregarItemsAlPedido)
+
+router.put("/modificar-item/:itemId", controlador.modificarItemDelPedido)
+
+router.delete("/eliminar-item/:itemId", controlador.eliminarItemDelPedido)
+
+router.post("/ver-items-pedido/:pedido", controlador.obtenerItemsDelPedido)
+
+module.exports = router
