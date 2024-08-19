@@ -65,7 +65,7 @@ const registroDeUsuario = async (req, res) => {
         }
 
         const passHasheado = bcrypt.hashSync(password, 10);
-        await registerUser(nombre, email, passHasheado);        
+        const userId = await registerUser(nombre, email, passHasheado);           
 
         const token = jwt.sign({ email: email }, process.env.SECRET_KEY, { expiresIn: process.env.DURATION_TOKEN });
 
@@ -74,7 +74,8 @@ const registroDeUsuario = async (req, res) => {
             auth: true,
             mensaje: 'Usuario registrado con éxito',
             token: token,
-            userName: nombre
+            userName: nombre,
+            userId: userId
         });
     } catch (error) {
         console.log('Error en registroDeUsuario:', error);

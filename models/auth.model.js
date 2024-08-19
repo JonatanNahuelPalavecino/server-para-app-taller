@@ -26,7 +26,9 @@ const registerUser = async (userName, mail, pass) => {
 
     try {
         const connection = await connectDB();
-        await connection.execute(sql, [userName, mail, pass]);
+        const result = await connection.execute(sql, [userName, mail, pass]);
+        return result[0].insertId
+        
         // await connection.end();
     } catch (error) {
         console.log('Error en auth.model: ', error);
