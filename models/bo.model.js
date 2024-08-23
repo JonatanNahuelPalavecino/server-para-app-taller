@@ -1,6 +1,6 @@
 const connectDB = require('../database/connection');
 
-const getBoByFilter = async (page = 1, pageSize = 25, descripcion = undefined) => {
+const getBoByFilter = async (page = 1, pageSize = 100, descripcion = undefined) => {
   const offset = (page -1) * pageSize
 
   // Base SQL query
