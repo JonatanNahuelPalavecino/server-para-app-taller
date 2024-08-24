@@ -4,6 +4,8 @@ const controlador = require("../controllers/pedidos.controller")
 
 router.get("/ver-items", controlador.verItems)
 
+router.get("/ultimo-num-pedido", controlador.verUltimoNumeroDeOrden)
+
 router.get("/ver-total-pedidos", controlador.verTotalDeOrdenes)
 
 router.post("/ver-pedidos/:page", controlador.obtenerPedidos)

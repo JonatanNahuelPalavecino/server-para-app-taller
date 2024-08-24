@@ -1,10 +1,21 @@
-const {getAllItems, getTotalOrder, createOrder, addItemsToTheOrder, getOrders, getItemsToOrder, closeOrder, updateOrder, deleteOrder, modifyItemToTheOrder, deleteItemToTheOrder} = require("../models/pedidos.model")
+const {getAllItems, getTotalOrder, createOrder, addItemsToTheOrder, getOrders, getItemsToOrder, closeOrder, updateOrder, deleteOrder, modifyItemToTheOrder, deleteItemToTheOrder, getLastNumberToOrder} = require("../models/pedidos.model")
 
 const verItems = async (req, res) => {
 
     try {
         const data = await getAllItems()
         res.status(200).json(data)
+    } catch (error) {
+        console.log('Error en pedidos.controller: ', error);
+        res.status(500).json({ error: 'Error al obtener los items' });
+    }
+}
+
+const verUltimoNumeroDeOrden = async (req, res) => {
+
+    try {
+        const total = await getLastNumberToOrder()
+        res.status(200).json(total)
     } catch (error) {
         console.log('Error en pedidos.controller: ', error);
         res.status(500).json({ error: 'Error al obtener los items' });
@@ -161,6 +172,7 @@ const eliminarItemDelPedido = async (req, res) => {
 
 module.exports = {
     verItems,
+    verUltimoNumeroDeOrden,
     verTotalDeOrdenes,
     obtenerPedidos,
     crearPedido,

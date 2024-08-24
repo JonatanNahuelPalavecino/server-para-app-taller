@@ -14,6 +14,20 @@ const getAllItems = async () => {
     }
 }
 
+const getLastNumberToOrder = async () => {
+    const sql = `SELECT MAX(num_pedido) as total FROM pedidos`
+
+    try {
+        const connection = await connectDB()
+        const [total] = await connection.execute(sql)
+
+        return total[0].total
+    } catch (error) {
+        console.log('Error en pedidos.model: ', error);
+        throw error;
+    }
+}
+
 const getTotalOrder = async () => {
     const sql =`SELECT COUNT(*) as total FROM pedidos`
 
@@ -249,6 +263,7 @@ const deleteItemToTheOrder = async (pedido_id, item_id) => {
 
 module.exports = {
     getAllItems,
+    getLastNumberToOrder,
     getTotalOrder,
     getOrders,
     createOrder,
