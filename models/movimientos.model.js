@@ -1,5 +1,6 @@
 const connectDB = require('../database/connection');
 const { verificarCpuConCobranzas } = require('./cobranzas.model');
+const dayjs = require('dayjs');
 
 const getMovesByFilter = async (page = 1, pageSize = 50, filters = {}) => {
   const offset = (page -1) * pageSize
@@ -63,10 +64,10 @@ const getMovesByFilter = async (page = 1, pageSize = 50, filters = {}) => {
 
 const setNewMove = async (movimiento, id = null) => {  
   
-  const {fecha, tipo_solicitud, items, mov_ax, base_operativa, comentario} = movimiento
+  const {fecha, tipo_solicitud, items, mov_ax, base_operativa} = movimiento
 
   //CUANDO ESTE EL FRONT SACAR ESTA OPCION YA QUE EL FE LE VA A ENVIAR UN TIPO DATE
-  const date = new Date(fecha)
+  const date = dayjs(fecha).format('YYYY-MM-DD');
 
   const sql = "INSERT INTO movimientos (fecha, tipo_solicitud, serial_number, descripcion, mov_ax, base_operativa, comentarios, pedido_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
   let connection;
@@ -77,7 +78,7 @@ const setNewMove = async (movimiento, id = null) => {
     await connection.beginTransaction();
 
     for (const item of items) {
-      const values = [date, tipo_solicitud, item.serial_number, item.descripcion, mov_ax, base_operativa, comentario, id];
+      const values = [date, tipo_solicitud, item.serial_number, item.descripcion, mov_ax, base_operativa, item.comentario, id];
       await connection.execute(sql, values);
       await verificarCpuConCobranzas(item.serial_number, date, base_operativa)
     }
@@ -85,7 +86,7 @@ const setNewMove = async (movimiento, id = null) => {
     // Confirmar la transacción
     await connection.commit();
 
-    return { success: "Movimientos creados con éxito" };
+    return { estado: "success", mensaje: "Movimientos creados con éxito" };
   } catch (error) {
     console.log('Error en movimientos.model: ', error);
     throw error;

@@ -59,7 +59,7 @@ const crearMovimiento = async (req, res) => {
 
   } catch (error) {
     console.log('Error en movimientos.controller: ', error);
-    res.status(500).json({ error: 'Error al guardar el/los registro/s' });
+    res.status(500).json({ estado: "error", mensaje: 'Error al guardar el/los registro/s' });
   }
 }
 
