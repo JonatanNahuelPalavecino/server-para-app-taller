@@ -16,10 +16,10 @@ const totalDeMovimientosPorFiltro = async (req, res) => {
 
 const descargarExcel = async (req, res) => {
   
-  const {filters} = req.body
+  const {filters, total} = req.body
 
   try {
-    const datos = await getMovesByFilter(undefined, undefined, filters)
+    const datos = await getMovesByFilter(undefined, total, filters)
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Movimientos');
 
