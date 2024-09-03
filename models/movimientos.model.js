@@ -72,6 +72,8 @@ const setNewMove = async (movimiento, id = null) => {
   const sql = "INSERT INTO movimientos (fecha, tipo_solicitud, serial_number, descripcion, mov_ax, base_operativa, comentarios, pedido_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
   let connection;
 
+  const cobranzas = []
+
   try {
     connection = await connectDB();
 
@@ -80,13 +82,14 @@ const setNewMove = async (movimiento, id = null) => {
     for (const item of items) {
       const values = [date, tipo_solicitud, item.serial_number, item.descripcion, mov_ax, base_operativa, item.comentario, id];
       await connection.execute(sql, values);
-      await verificarCpuConCobranzas(item.serial_number, date, base_operativa)
+      const cobranza = await verificarCpuConCobranzas(item.serial_number, date, base_operativa)
+      cobranzas.push(cobranza)
     }
 
     // Confirmar la transacción
     await connection.commit();
 
-    return { estado: "success", mensaje: "Movimientos creados con éxito" };
+    return { estado: "success", mensaje: "Movimientos creados con éxito", cobranzas: cobranzas };
   } catch (error) {
     console.log('Error en movimientos.model: ', error);
     throw error;
@@ -117,7 +120,7 @@ const modifyMove = async (datos, id_mov) => {
     connection = await connectDB();
     await connection.execute(sql, values);
 
-    return { success: "Movimiento modificado" };
+    return { estado: "success", mensaje: "Movimiento modificado" };
   } catch (error) {
     console.log('Error en modifyMove:', error);
     throw error;

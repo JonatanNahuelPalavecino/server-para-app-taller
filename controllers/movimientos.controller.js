@@ -72,7 +72,7 @@ const modificarMovimiento = async (req, res) => {
     res.status(201).json(result);
   } catch (error) {
     console.log('Error en movimientos.controller: ', error);
-    res.status(500).json({ error: 'Error al modificar el registro' });
+    res.status(500).json({ estado: "error", mensaje: 'Error al modificar el registro' });
   }
 }
 
