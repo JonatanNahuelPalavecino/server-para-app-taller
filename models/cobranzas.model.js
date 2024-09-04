@@ -66,17 +66,17 @@ const browseCobranza = async (serial_number) => {
 
 }
 
-const changeStateCobranza = async (serial_number, fecha_arribo, bo_id) => {
+const changeStateCobranza = async (serial_number, fecha_arribo, bo_id, id) => {
 
-    const sql = "UPDATE cobranzas SET fecha_arribo = ?, bo_id = ? WHERE serial_number = ?"
+    const sql = "UPDATE cobranzas SET fecha_arribo = ?, bo_id = ? WHERE serial_number = ? AND id = ?"
 
     const date = dayjs(fecha_arribo).format('YYYY-MM-DD');
 
     try {
         const connection = await connectDB()
-        await connection.execute(sql, [date, bo_id, serial_number])
+        await connection.execute(sql, [date, bo_id, serial_number, id])
 
-        return {succes: "CPU con cobranzas recibida."}
+        return {success: "CPU con cobranzas recibida."}
     } catch (error) {
         console.log('Error en cobranzas.model: ', error);
         throw error;
@@ -90,10 +90,19 @@ const verificarCpuConCobranzas = async (serial_number, fecha, bo_id) => {
     if (query === "Equipo no encontrado") {
         return {find: false, message: "Item sin cobranza.", equipo: serial_number}
     }
-    
-    const result = await changeStateCobranza(serial_number, fecha, bo_id)
 
-    return {find: true, message: result.succes, equipo: serial_number}
+    for (const equipo of query) {
+
+        if (!equipo.fecha_arribo && !equipo.bo_id) {
+            const result = await changeStateCobranza(serial_number, fecha, bo_id, equipo.id)
+        
+            return {find: true, message: result.success, equipo: serial_number}
+        }
+        
+    }
+    
+    return {find: false, message: "Item sin cobranza.", equipo: serial_number}
+    
 
 }
 
