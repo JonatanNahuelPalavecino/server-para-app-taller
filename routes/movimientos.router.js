@@ -10,4 +10,6 @@ router.post('/crear-movimiento', controller.crearMovimiento)
 
 router.put('/modificar-movimiento/:id', controller.modificarMovimiento)
 
+router.delete("/eliminar-movimiento/:id", controller.eliminarMovimiento)
+
 module.exports = router;

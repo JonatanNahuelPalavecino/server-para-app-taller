@@ -1,5 +1,5 @@
 const ExcelJS = require("exceljs")
-const { getMovesByFilter, setNewMove, modifyMove } = require('../models/movimientos.model');
+const { getMovesByFilter, setNewMove, modifyMove, deleteMove } = require('../models/movimientos.model');
 
 const totalDeMovimientosPorFiltro = async (req, res) => {
   const page = req.params.page
@@ -76,9 +76,22 @@ const modificarMovimiento = async (req, res) => {
   }
 }
 
+const eliminarMovimiento = async (req, res) => {
+  const id = req.params.id
+
+  try {
+    const result = await deleteMove(id)
+    res.status(200).json(result);
+  } catch (error) {
+    console.log('Error en movimientos.controller: ', error);
+    res.status(500).json({ estado: "error", mensaje: 'Error al eliminar el registro' });
+  }
+}
+
 module.exports = {
   totalDeMovimientosPorFiltro,
   descargarExcel,
   crearMovimiento,
-  modificarMovimiento
+  modificarMovimiento,
+  eliminarMovimiento
 };

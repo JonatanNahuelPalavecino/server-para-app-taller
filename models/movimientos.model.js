@@ -82,8 +82,11 @@ const setNewMove = async (movimiento, id = null) => {
     for (const item of items) {
       const values = [date, tipo_solicitud, item.serial_number, item.descripcion, mov_ax, base_operativa, item.comentario, id];
       await connection.execute(sql, values);
-      const cobranza = await verificarCpuConCobranzas(item.serial_number, date, base_operativa)
-      cobranzas.push(cobranza)
+
+      if (tipo_solicitud === "Ingreso") {
+        const cobranza = await verificarCpuConCobranzas(item.serial_number, date, base_operativa)
+        cobranzas.push(cobranza)
+      }
     }
 
     // Confirmar la transacción
@@ -127,8 +130,24 @@ const modifyMove = async (datos, id_mov) => {
   }
 }
 
+const deleteMove = async (id_mov) => {
+
+  const sql = `DELETE FROM movimientos WHERE id_mov = ?`
+  
+  try {
+    const connection = await connectDB()
+    await connection.execute(sql, [id_mov])
+
+    return { estado: "success", mensaje: "Movimiento Eliminado" };
+  } catch (error) {
+    console.log('Error en deleteMove:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getMovesByFilter,
   setNewMove,
-  modifyMove
+  modifyMove,
+  deleteMove
 };
