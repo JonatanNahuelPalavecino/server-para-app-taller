@@ -28,7 +28,33 @@ const uploadItems = async (serial_number, descripcion) => {
     }
 }
 
+const getTotalItems = async () => {
+    const sql = "SELECT COUNT(*) AS total FROM equipos";
+    try {
+        const connection = await connectDB();
+        const [results] = await connection.execute(sql);
+        return results[0].total;
+    } catch (error) {
+        console.log('Error en equipos.model:', error);
+        throw error;
+    }
+};
+
+const getItems = async () => {
+    const sql = "SELECT serial_number, descripcion FROM equipos";
+    try {
+        const connection = await connectDB();
+        const [results] = await connection.execute(sql);
+        return results;
+    } catch (error) {
+        console.log('Error en equipos.model:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     browseItem,
-    uploadItems
+    uploadItems,
+    getTotalItems,
+    getItems
 }

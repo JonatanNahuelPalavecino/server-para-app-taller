@@ -1,5 +1,6 @@
 const connectDB = require("../database/connection")
 const { setNewMove } = require("./movimientos.model")
+const dayjs = require('dayjs');
 
 const getAllItems = async () => {
     const sql = "SELECT * FROM items"
@@ -44,9 +45,10 @@ const getTotalOrder = async () => {
 
 const getOrders = async (page = 1, pageSize = 50, filters = {}) => {
     const offset = (page -1) * pageSize
-    const {fecha_uno, fecha_dos} = filters;
+    const {fecha_uno, fecha_dos, num_pedido} = filters;
 
-    let sql = `SELECT num_pedido, nombre, fecha, bo_id, proveedor, base, estado, comentario FROM pedidos JOIN usuarios ON pedidos.solicitante_id = usuarios.id JOIN bases_operativas ON pedidos.bo_id = bases_operativas.id `
+    let sql = `SELECT num_pedido, tipo_solicitud, nombre, fecha, base_operativa, estado, comentario FROM pedidos JOIN usuarios ON pedidos.solicitante_id = usuarios.id `
+    let total = `SELECT COUNT(*) AS total FROM pedidos JOIN usuarios ON pedidos.solicitante_id = usuarios.id `
 
     // Array to hold the WHERE conditions
     let conditions = [];
@@ -63,10 +65,13 @@ const getOrders = async (page = 1, pageSize = 50, filters = {}) => {
     } else if (fecha_dos) {
         conditions.push('fecha < DATE_ADD(?, INTERVAL 1 DAY)');
         values.push(fecha_dos);
+    } else if (num_pedido) {
+        conditions.push('num_pedido = ?');
+        values.push(num_pedido);
     }
 
     for (const [key, value] of Object.entries(filters)) {
-        if (value !== undefined && value !== null && key !== 'fecha_uno' && key !== 'fecha_dos') {
+        if (value !== undefined && value !== null && key !== 'fecha_uno' && key !== 'fecha_dos' && key !== num_pedido) {
           conditions.push(`${key} LIKE ?`);
           values.push(`%${value}%`);
         }
@@ -75,6 +80,7 @@ const getOrders = async (page = 1, pageSize = 50, filters = {}) => {
     // Adding the WHERE conditions to the SQL query
     if (conditions.length > 0) {
         sql += ' WHERE ' + conditions.join(' AND ');
+        total += ' WHERE ' + conditions.join(' AND ');
     }
 
     sql += ' ORDER BY num_pedido DESC LIMIT ? OFFSET ?';
@@ -82,54 +88,57 @@ const getOrders = async (page = 1, pageSize = 50, filters = {}) => {
     try {
         const connection = await connectDB()
         const [results] = await connection.execute(sql, [...values, pageSize, offset])
-        return results
+        const [ttl] = await connection.execute(total, values)
+        return {
+            total: ttl[0].total,
+            results
+        };
     } catch (error) {
         console.log('Error en pedidos.model: ', error);
         throw error;
     }
 }
 
-const createOrder = async (solicitanteId, fecha, bo_id, estado = "Solicitado", comentario) => {
-    const sql = `INSERT INTO pedidos (solicitante_id, fecha, bo_id, estado, comentario) VALUES (?, ?, ?, ?, ?)`
+const createOrder = async (solicitanteId, fecha, base_operativa, estado, comentario, tipo_solicitud) => {
+    
+    const sql = `INSERT INTO pedidos (solicitante_id, fecha, base_operativa, estado, comentario, tipo_solicitud) VALUES (?, ?, ?, ?, ?, ?)`
 
-    //CUANDO ESTE EL FRONT SACAR ESTA OPCION YA QUE EL FE LE VA A ENVIAR UN TIPO DATE
-    const date = new Date(fecha)
+    const date = dayjs(fecha).format('YYYY-MM-DD');
 
     try {
         const connection = await connectDB()
-        await connection.execute(sql, [solicitanteId, date, bo_id, estado, comentario])
+        await connection.execute(sql, [solicitanteId, date, base_operativa, estado, comentario, tipo_solicitud])
 
-        return {success: "Pedido creado exitosamente"}
+        return {estado: "success", mensaje: "Pedido creado exitosamente"}
     } catch (error) {
         console.log('Error en pedidos.model: ', error);
         throw error;
     }
 }
 
-const updateOrder = async (id, filters) => {
+const updateOrder = async (id, fecha, base_operativa, comentario, tipo_solicitud) => {
 
-    const pedido = await getOrders(undefined, undefined, {num_pedido: id})
+    const pedido = await getOrders(undefined, undefined, {num_pedido: id})    
 
-    if (pedido[0].estado === "Finalizado") {
+    if (pedido.results[0].estado === "Finalizado") {
         return {error: "No se puede modificar un pedido Finalizado"}
     }
-    
-    let {fecha, bo_id, comentario} = filters
 
-    fecha = fecha ? fecha : pedido[0].fecha
-    bo_id = bo_id ? bo_id : pedido[0].bo_id
-    comentario = comentario ? comentario : pedido[0].comentario
+    fecha = fecha ? fecha : pedido.results[0].fecha
+    base_operativa = base_operativa ? base_operativa : pedido.results[0].bo_id
+    comentario = comentario ? comentario : pedido.results[0].comentario
+    tipo_solicitud = tipo_solicitud ? tipo_solicitud : pedido.results[0].tipo_solicitud
  
-    const sql = `UPDATE pedidos SET fecha = ?, bo_id = ?, comentario = ? WHERE num_pedido = ?`
+    const sql = `UPDATE pedidos SET fecha = ?, base_operativa = ?, comentario = ?, tipo_solicitud = ? WHERE num_pedido = ?`
 
     //CUANDO ESTE EL FRONT SACAR ESTA OPCION YA QUE EL FE LE VA A ENVIAR UN TIPO DATE
-    const date = new Date(fecha)
+    const date = dayjs(fecha).format('YYYY-MM-DD');
 
     try {
         const connection = await connectDB()
-        await connection.execute(sql, [date, bo_id, comentario, id])
+        await connection.execute(sql, [date, base_operativa, comentario, tipo_solicitud, id])
 
-        return {success: "Pedido modificado exitosamente"}
+        return {estado: "success", mensaje: "Pedido modificado exitosamente"}
     } catch (error) {
         console.log('Error en pedidos.model: ', error);
         throw error;
@@ -139,9 +148,11 @@ const updateOrder = async (id, filters) => {
 const deleteOrder = async (id) => {
 
     const pedido = await getOrders(undefined, undefined, {num_pedido: id})
-
-    if (pedido[0].estado === "Finalizado") {
-        return {error: "No se puede eliminar un pedido Finalizado"}
+    
+    if (pedido.results.length === 0) {
+        return {estado: "error", mensaje: `No existe el pedido ${id}`}
+    }else if (pedido.results[0].estado === "Finalizado") {
+        return {estado: "error", mensaje: "No se puede eliminar un pedido Finalizado"}
     }
 
     const sql = `DELETE FROM pedidos WHERE num_pedido = ?`
@@ -150,26 +161,29 @@ const deleteOrder = async (id) => {
         const connection = await connectDB()
         await connection.execute(sql, [id])
 
-        return {success: "Pedido eliminado exitosamente"}
+        return {estado: "success", mensaje: "Pedido eliminado exitosamente"}
     } catch (error) {
         console.log('Error en pedidos.model: ', error);
         throw error;
     }
 }
 
-const closeOrder = async (id, items) => {
+const closeOrder = async (id, movimiento) => {
     const sql = `UPDATE pedidos SET estado = "Finalizado" WHERE num_pedido = ?`
 
-    if (!items) {
-        return {error: "No hay equipos cargados en el pedido"}
+    console.log(id, movimiento);
+    
+
+    if (movimiento.items.length === 0) {
+        return {estado: "error", mensaje: "No hay equipos cargados en el pedido"}
     }
     
     try {
         const connection = await connectDB()
         await connection.execute(sql, [id])
-        await setNewMove(items, id)
+        const mov = await setNewMove(movimiento, id)
 
-        return {success: "Pedido Finalizado"}
+        return {estado: "success", mensaje: "Pedido Finalizado", mov: mov}
     } catch (error) {
         console.log('Error en pedidos.model: ', error);
         throw error;
@@ -206,7 +220,7 @@ const addItemsToTheOrder = async (items) => {
     // Confirmar la transacción
     await connection.commit();
 
-    return { success: "Items agregados con éxito" };
+    return { estado: "success", mensaje: "Items agregados con éxito" };
   } catch (error) {
     console.log('Error en pedidos.model: ', error);
     throw error;
@@ -214,21 +228,23 @@ const addItemsToTheOrder = async (items) => {
     
 }
 
-const modifyItemToTheOrder = async (item_id, pedido_id, nuevoArticulo) => {
-
-    const pedido = await getOrders(undefined, undefined, {num_pedido: pedido_id})
-
-    if (pedido[0].estado === "Finalizado") {
-        return {error: "No se puede modificar el item de un pedido Finalizado"}
-    }
-    
-    const sql = `UPDATE items_pedidos SET item_id = ?, cantidad = ? WHERE pedido_id = ? AND item_id = ?`
+const modifyItemToTheOrder = async (items, num_pedido) => {
 
     try {
-        const connection = await connectDB()
-        await connection.execute(sql, [nuevoArticulo.id, nuevoArticulo.cantidad, pedido_id, item_id])
+        
+        const eliminar_items = await deleteItemToTheOrder(num_pedido)
 
-        return { success: "Item modificado con éxito" };
+        if (eliminar_items.estado === "success") {
+
+            const agregar_items = await addItemsToTheOrder({pedido_id: num_pedido, articulos: items})
+
+            if (agregar_items.estado === "success") {
+
+                return { estado: "success", mensaje: "Item modificado con éxito" };
+            }
+        }
+    
+
 
     } catch (error) {
         console.log('Error en pedidos.model: ', error);
@@ -236,21 +252,21 @@ const modifyItemToTheOrder = async (item_id, pedido_id, nuevoArticulo) => {
     }
 }
 
-const deleteItemToTheOrder = async (pedido_id, item_id) => {
+const deleteItemToTheOrder = async (pedido_id) => {
 
-    const pedido = await getOrders(undefined, undefined, {num_pedido: pedido_id})
+    const pedido = await getOrders(undefined, undefined, {num_pedido: pedido_id})    
 
-    if (pedido[0].estado === "Finalizado") {
-        return {error: "No se puede eliminar el item de un pedido Finalizado"}
+    if (pedido.results[0].estado === "Finalizado") {
+        return {estado: "error", mensaje: "No se puede eliminar el item de un pedido Finalizado"}
     }
     
-    const sql = `DELETE FROM items_pedidos WHERE pedido_id = ? AND item_id = ?`
+    const sql = `DELETE FROM items_pedidos WHERE pedido_id = ?`
 
     try {
         const connection = await connectDB()
-        await connection.execute(sql, [pedido_id, item_id])
+        await connection.execute(sql, [pedido_id])
 
-        return { success: "Item eliminado con éxito" };
+        return { estado: "success", mensaje: "Item eliminado con éxito" };
 
     } catch (error) {
         console.log('Error en pedidos.model: ', error);

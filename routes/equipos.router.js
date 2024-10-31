@@ -5,6 +5,12 @@ const upload = require("../middlewares/equipos.middleware")
 
 router.post("/buscar-equipo", controller.buscarEquipo)
 
-router.post("/cargar-inventario", upload.single('file'), controller.cargarInventario)
+router.post("/cargar-equipos", upload.single('file'), controller.cargarInventario)
+
+router.get("/progreso", controller.obtenerProgreso)
+
+router.get("/total-equipos", controller.obtenerTotalEquipos)
+
+router.get("/descargar-equipos", controller.descargarEquiposExcel)
 
 module.exports = router;

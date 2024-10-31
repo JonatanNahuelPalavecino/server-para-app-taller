@@ -4,11 +4,12 @@ const dayjs = require('dayjs');
 const getCobranzas = async (page = 1, pageSize = 50, filters) => {
     const offset = (page -1) * pageSize
     let sql = `SELECT * FROM cobranzas `
+    let total = `SELECT COUNT(*) AS total FROM cobranzas`
     let conditions = [];
-    let values = [];
+    let values = [];    
 
     for (const [key, value] of Object.entries(filters)) {
-        if (value !== undefined && value !== null && key !== 'fecha_uno' && key !== 'fecha_dos') {
+        if (value !== undefined && value !== null && value !== "" && key !== 'fecha_uno' && key !== 'fecha_dos') {
           conditions.push(`${key} LIKE ?`);
           values.push(`%${value}%`);
         }
@@ -16,6 +17,7 @@ const getCobranzas = async (page = 1, pageSize = 50, filters) => {
 
     if (conditions.length > 0) {
         sql += ' WHERE ' + conditions.join(' AND ');
+        total += ' WHERE ' + conditions.join(' AND ');
     }
 
     sql += ' ORDER BY id DESC LIMIT ? OFFSET ?';
@@ -23,7 +25,11 @@ const getCobranzas = async (page = 1, pageSize = 50, filters) => {
     try {
         const connection = await connectDB()
         const [results] = await connection.execute(sql, [...values, pageSize, offset])
-        return results
+        const [ttl] = await connection.execute(total, values)
+        return {
+            total: ttl[0].total,
+            results
+        };
     } catch (error) {
         console.log('Error en cobranzas.model: ', error);
         throw error;
@@ -40,7 +46,7 @@ const setNuevaCobranza = async (fecha_deteccion, serial_number) => {
         const connection = await connectDB()
         await connection.execute(sql, [date, serial_number])
 
-        return {succes: "Equipo cargado exitosamente"}
+        return {estado: "success", mensaje: "Equipo cargado exitosamente"}
     } catch (error) {
         console.log('Error en cobranzas.model: ', error);
         throw error;
@@ -68,7 +74,7 @@ const browseCobranza = async (serial_number) => {
 
 const changeStateCobranza = async (serial_number, fecha_arribo, bo_id, id) => {
 
-    const sql = "UPDATE cobranzas SET fecha_arribo = ?, bo_id = ? WHERE serial_number = ? AND id = ?"
+    const sql = "UPDATE cobranzas SET fecha_arribo = ?, base_operativa = ? WHERE serial_number = ? AND id = ?"
 
     const date = dayjs(fecha_arribo).format('YYYY-MM-DD');
 
@@ -93,7 +99,7 @@ const verificarCpuConCobranzas = async (serial_number, fecha, bo_id) => {
 
     for (const equipo of query) {
 
-        if (!equipo.fecha_arribo && !equipo.bo_id) {
+        if (!equipo.fecha_arribo && !equipo.base_operativa) {
             const result = await changeStateCobranza(serial_number, fecha, bo_id, equipo.id)
         
             return {find: true, message: result.success, equipo: serial_number}

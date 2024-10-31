@@ -9,7 +9,7 @@ const obtenerCobranzas = async (req, res) => {
         res.status(200).json(data)
     } catch (error) {
         console.log('Error en cobranzas.controller: ', error);
-        res.status(500).json({ error: 'Error al obtener los equipos con cobranzas' });
+        res.status(500).json({ estado: "error", mensaje: 'Error al obtener los equipos con cobranzas' });
     }
 }
 
@@ -21,7 +21,7 @@ const cargarNuevaCobranza = async (req, res) => {
         res.status(201).json(data)
     } catch (error) {
         console.log('Error en cobranzas.controller: ', error);
-        res.status(500).json({ error: 'Error al obtener los equipos con cobranzas' });
+        res.status(500).json({ estado: "error", mensaje: 'Error al cargar el equipo con cobranzas' });
     }
 
 }

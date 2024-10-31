@@ -66,6 +66,8 @@ const crearMovimiento = async (req, res) => {
 const modificarMovimiento = async (req, res) => {
   const id = req.params.id
   const datos = req.body
+  console.log(datos);
+  
 
   try {
     const result = await modifyMove(datos, id)

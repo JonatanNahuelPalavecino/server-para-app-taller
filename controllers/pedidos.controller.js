@@ -47,23 +47,22 @@ const obtenerPedidos = async (req, res) => {
 }
 
 const crearPedido = async (req, res) => {
-    const {solicitanteId, fecha, bo_id, comentario} = req.body
+    const {solicitanteId, fecha, base_operativa, comentario, tipo_solicitud} = req.body
 
     try {
-        const result = await createOrder(solicitanteId, fecha, bo_id, undefined, comentario)
+        const result = await createOrder(solicitanteId, fecha, base_operativa, "Solicitado", comentario, tipo_solicitud)
         res.status(201).json(result)
     } catch (error) {
         console.log('Error en pedidos.controller: ', error);
-        res.status(500).json({ error: 'Error al crear el pedido' });
+        res.status(500).json({ estado: "error", mensaje: 'Error al crear el pedido' });
     }
 }
 
 const modificarPedido = async (req, res) => {
-    const num_pedido = req.params.pedido
-    const {filters} = req.body
-
+    const {fecha, base_operativa, comentario, tipo_solicitud, num_pedido} = req.body
+    
     try {
-        const result = await updateOrder(num_pedido, filters)
+        const result = await updateOrder(num_pedido, fecha, base_operativa, comentario, tipo_solicitud)
 
         if (result.error) {
             return res.status(500).json(result)
@@ -72,7 +71,7 @@ const modificarPedido = async (req, res) => {
         res.status(201).json(result)
     } catch (error) {
         console.log('Error en pedidos.controller: ', error);
-        res.status(500).json({ error: 'Error al modificar el pedido' });
+        res.status(500).json({ estado: "error", mensaje: 'Error al modificar el pedido' });
     }
 }
 
@@ -89,7 +88,7 @@ const eliminarPedido = async (req, res) => {
         res.status(201).json(result)
     } catch (error) {
         console.log('Error en pedidos.controller: ', error);
-        res.status(500).json({ error: 'Error al modificar el pedido' });
+        res.status(500).json({ estado: "error", mensaje: 'Error al modificar el pedido' });
     }
 }
 
@@ -99,14 +98,14 @@ const finalizarPedido = async (req, res) => {
     try {
         const result = await closeOrder(id, movimiento)
         
-        if (result.error) {
+        if (result.estado === "error") {
             return res.status(500).json(result)
         }
 
         res.status(201).json(result)
     } catch (error) {
         console.log('Error en pedidos.controller: ', error);
-        res.status(500).json({ error: 'Error al cambiar el estado del pedido' });
+        res.status(500).json({ estado: "error", mensaje: 'Error al cambiar el estado del pedido' });
     }
 }
 
@@ -130,18 +129,17 @@ const agregarItemsAlPedido = async (req, res) => {
         res.status(201).json(registrarItems); // Envía el resultado al cliente
     } catch (error) {
         console.log('Error en pedidos.controller: ', error);
-        res.status(500).json({ error: 'Error al guardar los items en el pedido' });
+        res.status(500).json({ estado: "error", mensaje: 'Error al guardar los items en el pedido' });
     }
 }
 
 const modificarItemDelPedido = async (req, res) => {
-    const item_id = req.params.itemId
-    const {pedido_id, nuevoArticulo} = req.body    
+    const {items, num_pedido} = req.body    
 
     try {
-        const result = await modifyItemToTheOrder(item_id, pedido_id, nuevoArticulo)
+        const result = await modifyItemToTheOrder(items, num_pedido)        
         
-        if (result.error) {
+        if (result.estado === "error") {
             return res.status(500).json(result)
         }
 
@@ -153,11 +151,10 @@ const modificarItemDelPedido = async (req, res) => {
 }
 
 const eliminarItemDelPedido = async (req, res) => {
-    const item_id = req.params.itemId
     const {pedido_id} = req.body
 
     try {
-        const result = await deleteItemToTheOrder(pedido_id, item_id)
+        const result = await deleteItemToTheOrder(pedido_id)
 
         if (result.error) {
             return res.status(500).json(result)

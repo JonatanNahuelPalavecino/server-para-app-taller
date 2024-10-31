@@ -5,7 +5,7 @@ const dayjs = require('dayjs');
 const getMovesByFilter = async (page = 1, pageSize = 50, filters = {}) => {
   const offset = (page -1) * pageSize
 
-  const {fecha_uno, fecha_dos} = filters;
+  const {fecha_uno, fecha_dos, pedido_id} = filters;
   // Base SQL query
   let sql = `SELECT * FROM movimientos`;
   let total = `SELECT COUNT(*) AS total FROM movimientos`
@@ -26,10 +26,13 @@ const getMovesByFilter = async (page = 1, pageSize = 50, filters = {}) => {
   } else if (fecha_dos) {
     conditions.push('fecha < DATE_ADD(?, INTERVAL 1 DAY)');
     values.push(fecha_dos);
+  } else if (pedido_id) {
+    conditions.push('pedido_id = ?');
+    values.push(pedido_id);
   }
 
   for (const [key, value] of Object.entries(filters)) {
-    if (value !== undefined && value !== null && key !== 'fecha_uno' && key !== 'fecha_dos') {
+    if (value !== undefined && value !== null && key !== 'fecha_uno' && key !== 'fecha_dos' && key !== "pedido_id") {
       conditions.push(`${key} LIKE ?`);
       values.push(`%${value}%`);
     }
@@ -63,10 +66,9 @@ const getMovesByFilter = async (page = 1, pageSize = 50, filters = {}) => {
 }
 
 const setNewMove = async (movimiento, id = null) => {  
-  
+
   const {fecha, tipo_solicitud, items, mov_ax, base_operativa} = movimiento
 
-  //CUANDO ESTE EL FRONT SACAR ESTA OPCION YA QUE EL FE LE VA A ENVIAR UN TIPO DATE
   const date = dayjs(fecha).format('YYYY-MM-DD');
 
   const sql = "INSERT INTO movimientos (fecha, tipo_solicitud, serial_number, descripcion, mov_ax, base_operativa, comentarios, pedido_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
@@ -101,7 +103,7 @@ const setNewMove = async (movimiento, id = null) => {
 }
 
 const modifyMove = async (datos, id_mov) => {
-
+  
   let sql = `UPDATE movimientos SET `;
   let updates = [];
   let values = [];
