@@ -17,7 +17,7 @@ app.use(morgan('dev'))
 app.use(cors())
 
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:4173']
+    origin: ['http://localhost:5173', 'http://localhost:4173', 'https://frontend-para-app-taller.vercel.app/']
   }));
 
 app.use("/movimientos", movimientos)
